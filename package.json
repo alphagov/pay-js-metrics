@@ -1,7 +1,7 @@
 {
   "name": "pay-js-metrics",
   "version": "1.0.0",
-  "description": "NodeJS library for metric instrumentation in GOV.UK Pay",
+  "description": "GOV.UK Pay Express middleware for Prometheus metrics instrumentation",
   "main": "index.js",
   "scripts": {
     "build": "rm -rf dist && tsc",
