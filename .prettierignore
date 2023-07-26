@@ -1,0 +1,7 @@
+# Ignore everything:
+/*
+
+# Except
+!/src
+!/ecs_metadata
+!jest.config.ts

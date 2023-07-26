@@ -1,0 +1,11 @@
+{
+  "extends": "@tsconfig/node18-strictest/tsconfig.json",
+  "exclude": ["node_modules"],
+  "include": ["src"],
+  "compilerOptions": {
+    "ignoreDeprecations": "5.0",
+    "outDir": "dist",
+    "declaration": true,
+    "types": ["node", "jest", "express"]
+  }
+}
