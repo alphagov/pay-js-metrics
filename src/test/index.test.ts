@@ -118,6 +118,27 @@ describe('/metrics endpoint', () => {
     )
   })
 
+  it('should return express http metrics', async () => {
+    app.use(metrics.configure(metricsConfig))
+    app.get('/test', async (_, res) => {
+      res.sendStatus(200)
+    })
+    app.get('/test/:withparam', async (_, res) => {
+      res.sendStatus(200)
+    })
+    await request(app).get('/test')
+    await request(app).get('/test/ishouldnotbeinthemetrics')
+    const response = await request(app).get('/metrics')
+    expect(response.status).toBe(200)
+    expect(response.text).toContain(
+      'express_http_count{status_code="200",http_method="GET",path="/test",one="test1",two="test2",three="test3"} 1'
+    )
+    expect(response.text).toContain(
+      'express_http_count{status_code="200",http_method="GET",path="/test/:withparam",one="test1",two="test2",three="test3"} 1'
+    )
+    expect(response.text).not.toContain('ishouldnotbeinthemetrics')
+  })
+
   it('should return metrics with ecs labels when configured', async () => {
     env.ECS_CONTAINER_METADATA_URI_V4 = 'http://1.2.3.4:8080/path/'
     app.use(metrics.configure(metricsConfig))
