@@ -8,7 +8,7 @@ const metrics = require('../src')
 const app = express()
 const PORT = 3001
 
-env.ECS_CONTAINER_METADATA_URI_V4 = 'http://localhost:3002'
+env.ECS_CONTAINER_METADATA_URI_V4 = 'http://localhost:3002' // use the bundled ecs metadata stub, both can be started by running `npm run demo`
 
 const config: MetricsConfigurationOptions = {
   defaultMetricsLabels: {

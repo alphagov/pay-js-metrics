@@ -21,15 +21,15 @@ app.use(metrics.configure())
 - Process CPU and memory metrics
 - Express HTTP request metrics
 
-These metrics will be published on `{your.app}/metrics`
+These metrics will be published on `your.app/metrics`
 
 ### Configuration
 
 #### ECS
 
-This middleware supports retrieving ECS metadata as labels for all metrics, when 
-the `ECS_CONTAINER_METADATA_URI_V4` environment variable is available the middleware will contact the endpoint and retrieve
-the metadata automatically. The following fields are extracted and included automatically:
+This middleware supports ECS metadata as labels for all metrics, when the `ECS_CONTAINER_METADATA_URI_V4` 
+environment variable is available (automatically injected into ECS tasks) the middleware will contact the 
+endpoint and retrieve the metadata. The following fields are extracted and included automatically:
 
 - `containerImageTag`
 - `ecsClusterName`

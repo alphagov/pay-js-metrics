@@ -122,6 +122,15 @@ const registerHistogram = (name: string, help: string, labelNames: string[], buc
   })
 }
 
+module.exports = {
+  configure,
+  registerCounter,
+  registerGauge,
+  registerHistogram,
+}
+
+// --- PRIVATE
+
 const getECSMetadata = (url: URL): Promise<ECSLabels> => {
   return new Promise((resolve, reject) => {
     const options: RequestOptions = {
@@ -169,15 +178,6 @@ const getECSMetadata = (url: URL): Promise<ECSLabels> => {
   })
 }
 
-module.exports = {
-  configure,
-  registerCounter,
-  registerGauge,
-  registerHistogram,
-}
-
-// --- PRIVATE
-
 const hasRequiredLabels = (labels: DefaultMetricsLabels) => {
   if (typeof labels !== 'object') {
     return false
@@ -208,10 +208,6 @@ const hasRequiredLabels = (labels: DefaultMetricsLabels) => {
 }
 
 // --- TYPES
-
-export type CustomMetrics = {
-  [name: string]: Gauge | Counter | Histogram
-}
 
 export type DefaultMetricsLabels = {
   [key: string]: string
