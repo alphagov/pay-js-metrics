@@ -1,18 +1,16 @@
 import type { Request, Response } from 'express'
 import type { MetricsConfigurationOptions } from '../src'
 
-const express = require('express')
 const { env } = require('node:process')
+const express = require('express')
 const metrics = require('../src')
-
-env.ECS_CONTAINER_METADATA_URI_V4 = `http://localhost:3002/`
-env.NODE_ENV = 'production'
 
 const app = express()
 const PORT = 3001
 
+env.ECS_CONTAINER_METADATA_URI_V4 = 'http://localhost:3002'
+
 const config: MetricsConfigurationOptions = {
-  fetchECSLabels: true,
   defaultMetricsLabels: {
     hello: 'there',
   },
@@ -42,10 +40,10 @@ app.get('/hello', async (_: Request, res: Response) => {
   })
 })
 
-app.get('/hello/:id', async (req: Request, res: Response) => {
+app.get('/hello/:name', async (req: Request, res: Response) => {
   hello_param_counter.labels({ http_method: 'GET' }).inc(1)
   res.setHeader('Content-Type', 'application/json')
-  res.end(JSON.stringify({ message: `hello ${req.params['id']}` }))
+  res.end(JSON.stringify({ message: `hello ${req.params['name']}` }))
 })
 
 app.listen(PORT, () => {

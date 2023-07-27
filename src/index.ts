@@ -10,17 +10,16 @@ const http = require('node:http')
 const EXPRESS_METRIC_STATUS_CODE = 'status_code'
 const EXPRESS_METRIC_HTTP_METHOD = 'http_method'
 const EXPRESS_METRIC_PATH = 'path'
-
-const customMetrics: CustomMetrics = {}
-const path = new RegExp('^/metrics?$')
+const METRICS_PATH = new RegExp('^/metrics?$')
 
 let defaultMetricsLabels: DefaultMetricsLabels = {}
 let expressHttpHistogram: Histogram
 let ecsLabelsRequired: boolean = false
 let ecsLabelsValidated: boolean = false
+let metadataUrl: URL | undefined
 
 const middleware = (req: Request, res: Response, next: NextFunction) => {
-  if (req.url.match(path)) {
+  if (req.url.match(METRICS_PATH)) {
     if (ecsLabelsValidated || !ecsLabelsRequired) {
       res.format({
         'text/plain': async () => {
@@ -61,13 +60,21 @@ const configure = (opts: MetricsConfigurationOptions = {}) => {
     ecsLabelsRequired = true
   }
 
+  try {
+    metadataUrl = new URL(env.ECS_CONTAINER_METADATA_URI_V4)
+  } catch {
+    const errorMessage = 'ECS_CONTAINER_METADATA_URI_V4 not found in environment'
+    ecsLabelsRequired ? console.error(errorMessage) : console.warn(errorMessage)
+    metadataUrl = undefined
+  }
+
   if (opts.defaultMetricsLabels) {
     defaultMetricsLabels = opts.defaultMetricsLabels
     prometheus.register.setDefaultLabels(defaultMetricsLabels)
   }
 
-  if (opts.fetchECSLabels) {
-    getECSMetadata()
+  if (typeof metadataUrl !== 'undefined') {
+    getECSMetadata(metadataUrl)
       .then((ecsLabels) => {
         defaultMetricsLabels = {
           ...defaultMetricsLabels,
@@ -91,82 +98,74 @@ const configure = (opts: MetricsConfigurationOptions = {}) => {
 }
 
 const registerCounter = (name: string, help: string, labelNames: string[]): Counter => {
-  customMetrics[name] = new prometheus.Counter({
+  return new prometheus.Counter({
     name,
     help,
     labelNames,
   })
-  return customMetrics[name] as Counter
 }
 
 const registerGauge = (name: string, help: string, labelNames: string[]): Gauge => {
-  customMetrics[name] = new prometheus.Gauge({
+  return new prometheus.Gauge({
     name,
     help,
     labelNames,
   })
-  return customMetrics[name] as Gauge
 }
 
 const registerHistogram = (name: string, help: string, labelNames: string[], buckets?: number[]): Histogram => {
-  customMetrics[name] = new prometheus.Histogram({
+  return new prometheus.Histogram({
     name,
     help,
     labelNames,
     ...(buckets != undefined && { buckets }),
   })
-  return customMetrics[name] as Histogram
 }
 
-const getECSMetadata = (): Promise<ECSLabels> => {
+const getECSMetadata = (url: URL): Promise<ECSLabels> => {
   return new Promise((resolve, reject) => {
-    try {
-      const metadataURL = new URL(env.ECS_CONTAINER_METADATA_URI_V4)
-      const options: RequestOptions = {
-        protocol: metadataURL.protocol,
-        host: metadataURL.hostname,
-        port: metadataURL.port || '80',
-        path: metadataURL.pathname,
-        timeout: 5000,
-      }
-
-      const containerRequest = http.get(options, (response: IncomingMessage) => {
-        let data = ''
-        let ecsMetadataLabels: ECSLabels
-
-        response.on('data', (chunk) => {
-          data += chunk
-        })
-
-        response.on('end', () => {
-          try {
-            const containerMetadata = JSON.parse(data)
-            const taskARN: string = containerMetadata.Labels['com.amazonaws.ecs.task-arn']
-            const clusterName: string = containerMetadata.Labels['com.amazonaws.ecs.cluster'].split('/')[1]
-
-            ecsMetadataLabels = {
-              containerImageTag: containerMetadata.Image.split(':')[1],
-              ecsClusterName: clusterName,
-              ecsServiceName: containerMetadata.DockerName,
-              ecsTaskID: taskARN.substring(taskARN.lastIndexOf('/') + 1),
-              awsAccountName: clusterName.split('-')[0]!,
-              instance: containerMetadata.Networks[0].IPv4Addresses[0],
-            }
-            resolve(ecsMetadataLabels)
-          } catch (error) {
-            reject(new Error(`Error retrieving container metadata: ${error}`))
-          }
-        })
-      })
-
-      containerRequest.on('error', (error: Error) => {
-        reject(new Error(`Error retrieving container metadata: ${error}`))
-      })
-
-      containerRequest.end()
-    } catch (error) {
-      reject(new Error(`Error parsing metadata url from environment: ${error}`))
+    const options: RequestOptions = {
+      protocol: url.protocol,
+      host: url.hostname,
+      port: url.port || '80',
+      path: url.pathname,
+      timeout: 5000,
     }
+
+    const containerRequest = http.get(options, (response: IncomingMessage) => {
+      let data = ''
+      let ecsMetadataLabels: ECSLabels
+
+      response.on('data', (chunk) => {
+        data += chunk
+      })
+
+      response.on('end', () => {
+        try {
+          const containerMetadata = JSON.parse(data)
+          const taskARN: string = containerMetadata.Labels['com.amazonaws.ecs.task-arn']
+          const clusterName: string = containerMetadata.Labels['com.amazonaws.ecs.cluster'].split('/')[1]
+
+          ecsMetadataLabels = {
+            containerImageTag: containerMetadata.Image.split(':')[1],
+            ecsClusterName: clusterName,
+            ecsServiceName: containerMetadata.DockerName,
+            ecsTaskID: taskARN.substring(taskARN.lastIndexOf('/') + 1),
+            awsAccountName: clusterName.split('-')[0]!,
+            instance: containerMetadata.Networks[0].IPv4Addresses[0],
+          }
+          resolve(ecsMetadataLabels)
+        } catch (error) {
+          reject(new Error(`Error parsing container metadata: ${error}`))
+        }
+      })
+    })
+
+    containerRequest.on('error', (error: Error) => {
+      reject(new Error(`Error retrieving container metadata: ${error}`))
+    })
+
+    containerRequest.end()
   })
 }
 
@@ -219,7 +218,6 @@ export type DefaultMetricsLabels = {
 }
 
 export type MetricsConfigurationOptions = {
-  fetchECSLabels?: boolean
   defaultMetricsLabels?: DefaultMetricsLabels
 }
 

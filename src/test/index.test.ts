@@ -33,15 +33,18 @@ jest.mock('node:http', () => ({
   },
 }))
 describe('/metrics endpoint', () => {
-  const envRestorePoint = env
+  const warnLogSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+  const errorLogSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+
   let app: Express
   let metrics = require('../index')
 
   beforeEach(() => {
-    env = envRestorePoint
     jest.resetModules()
     app = express()
     metrics = require('../index')
+    env.NODE_ENV = 'development'
+    env.ECS_CONTAINER_METADATA_URI_V4 = undefined
   })
 
   it('should return metrics as plain text by default', async () => {
@@ -75,9 +78,9 @@ describe('/metrics endpoint', () => {
 
   it('should return custom metrics with default and custom labels', async () => {
     app.use(metrics.configure(metricsConfig))
-    const test_counter = metrics.registerCounter('test_counter', 'test counter metric', ['test_type']) // user defined metric label 'test_type'
-    const test_gauge = metrics.registerGauge('test_gauge', 'test gauge metric', ['test_type']) // user defined metric label 'test_type'
-    const test_histogram = metrics.registerHistogram('test_histogram', 'test histogram metric', ['test_type']) // user defined metric label 'test_type'
+    const test_counter = metrics.registerCounter('test_counter', 'test counter metric', ['test_type'])
+    const test_gauge = metrics.registerGauge('test_gauge', 'test gauge metric', ['test_type'])
+    const test_histogram = metrics.registerHistogram('test_histogram', 'test histogram metric', ['test_type'])
 
     test_counter.labels({ test_type: 'COUNTER' }).inc(1)
     test_gauge.labels({ test_type: 'GAUGE' }).set(24)
@@ -117,12 +120,7 @@ describe('/metrics endpoint', () => {
 
   it('should return metrics with ecs labels when configured', async () => {
     env.ECS_CONTAINER_METADATA_URI_V4 = 'http://1.2.3.4:8080/path/'
-    app.use(
-      metrics.configure({
-        fetchECSLabels: true,
-        ...metricsConfig,
-      })
-    )
+    app.use(metrics.configure(metricsConfig))
 
     const response = await request(app).get('/metrics')
     expect(response.status).toBe(200)
@@ -140,25 +138,16 @@ describe('/metrics endpoint', () => {
 
     const response = await request(app).get('/metrics')
     expect(response.status).toBe(501)
+    expect(errorLogSpy).toHaveBeenCalledWith('ECS_CONTAINER_METADATA_URI_V4 not found in environment')
     expect(response.text).toBe(JSON.stringify({ error: 'metrics initialization error' }))
   })
 
   it('should return metrics when environment type is not production and metadata uri is not available', async () => {
-    const logSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
-    env.NODE_ENV = 'development'
-    env.ECS_CONTAINER_METADATA_URI_V4 = undefined
-    app.use(
-      metrics.configure({
-        fetchECSLabels: true,
-        ...metricsConfig,
-      })
-    )
+    app.use(metrics.configure(metricsConfig))
 
     const response = await request(app).get('/metrics')
     expect(response.status).toBe(200)
     expect(response.text).toContain('nodejs_eventloop_lag_stddev_seconds')
-    expect(logSpy).toHaveBeenCalledWith(
-      'Error parsing metadata url from environment: TypeError [ERR_INVALID_URL]: Invalid URL'
-    )
+    expect(warnLogSpy).toHaveBeenCalledWith('ECS_CONTAINER_METADATA_URI_V4 not found in environment')
   })
 })

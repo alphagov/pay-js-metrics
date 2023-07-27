@@ -23,27 +23,35 @@ app.use(metrics.configure())
 
 These metrics will be published on `{your.app}/metrics`
 
+### Configuration
+
+#### ECS
+
+This middleware supports retrieving ECS metadata as labels for all metrics, when 
+the `ECS_CONTAINER_METADATA_URI_V4` environment variable is available the middleware will contact the endpoint and retrieve
+the metadata automatically. The following fields are extracted and included automatically:
+
+- `containerImageTag`
+- `ecsClusterName`
+- `ecsServiceName`
+- `ecsTaskID`
+- `awsAccountName`
+- `instance`
+
+__IMPORTANT__: If the `NODE_ENV` is set to `production` then these fields are mandatory, the `/metrics` endpoint will 
+not initialise without these labels being present.
+
+#### Optional configuration options
+
 `pay-js-metrics` takes an optional configuration object that has the following properties:
 
 ```ts
 type MetricsConfigurationOptions = {
-  fetchECSLabels?: boolean
   defaultMetricsLabels?: {
     [key: string]: string
   }
 }
 ```
-
-`fetchECSLabels` will configure all metrics with the following default labels obtained via the `ECS_CONTAINER_METADATA_URI` if set to `true`:
-
-- `containerImageTag`
-- `ecsClusterName`
-- `ecsServiceName` 
-- `ecsTaskID` 
-- `awsAccountName` 
-- `instance`
-
-__IMPORTANT__: If the `NODE_ENV` is set to `production` then these fields are mandatory, the metrics middleware will not initialise without these labels being present.
 
 `defaultMetricsLabels` is an object of KV strings that will be applied as labels to all metrics. These labels will be included with the ECS labels (if enabled).
 
@@ -52,11 +60,11 @@ __IMPORTANT__: If the `NODE_ENV` is set to `production` then these fields are ma
 `pay-js-metrics` supports the following metric types:
 
 - Histograms
-  - Histograms track sizes and frequency of events
+  - A histogram samples observations (usually things like request durations or response sizes) and counts them in configurable buckets
 - Counters
-  - Counters go up, and reset when the process restarts
+  - A counter is a cumulative metric that represents a single monotonically increasing counter whose value can only increase or be reset to zero on restart
 - Gauges
-  - Gauges are similar to Counters but a Gauge's value can be decreased
+  - A gauge is a metric that represents a single numerical value that can arbitrarily go up and down
 
 Custom metrics can be registered via the exported helper functions:
 
