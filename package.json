@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "GOV.UK Pay Express middleware for Prometheus metrics instrumentation",
   "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
     "build": "rm -rf dist && tsc",
     "test": "prettier --check . && jest",
