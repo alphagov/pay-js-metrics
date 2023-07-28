@@ -10,7 +10,7 @@ const http = require('node:http')
 const EXPRESS_METRIC_STATUS_CODE = 'status_code'
 const EXPRESS_METRIC_HTTP_METHOD = 'http_method'
 const EXPRESS_METRIC_PATH = 'path'
-const METRICS_PATH = new RegExp('^/metrics?$')
+const METRICS_PATH = /^\/metrics?$/
 
 let defaultMetricsLabels: DefaultMetricsLabels = {}
 let expressHttpHistogram: Histogram
@@ -19,7 +19,7 @@ let ecsLabelsValidated: boolean = false
 let metadataUrl: URL | undefined
 
 const middleware = (req: Request, res: Response, next: NextFunction) => {
-  if (req.url.match(METRICS_PATH)) {
+  if (RegExp(METRICS_PATH).exec(req.url)) {
     if (ecsLabelsValidated || !ecsLabelsRequired) {
       res.format({
         'text/plain': async () => {
@@ -55,7 +55,7 @@ const middleware = (req: Request, res: Response, next: NextFunction) => {
   next()
 }
 
-const configure = (opts: MetricsConfigurationOptions = {}) => {
+const initialise = (opts: MetricsConfigurationOptions = {}) => {
   if (env.NODE_ENV === 'production') {
     ecsLabelsRequired = true
   }
@@ -123,7 +123,7 @@ const registerHistogram = (name: string, help: string, labelNames: string[], buc
 }
 
 module.exports = {
-  configure,
+  initialise,
   registerCounter,
   registerGauge,
   registerHistogram,

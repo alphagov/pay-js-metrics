@@ -16,7 +16,7 @@ const config: MetricsConfigurationOptions = {
   },
 }
 
-app.use(metrics.configure(config))
+app.use(metrics.initialise(config))
 
 const hello_counter = metrics.registerCounter('hello_counter', '/hello example counter metric', ['http_method'])
 const hello_param_counter = metrics.registerCounter('hello_param_counter', '/hello/:id example counter metric', [
