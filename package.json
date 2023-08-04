@@ -1,9 +1,9 @@
 {
-  "name": "pay-js-metrics",
-  "version": "1.0.0",
+  "name": "@govuk-pay/pay-js-metrics",
+  "version": "1.0.1",
   "description": "GOV.UK Pay Express middleware for Prometheus metrics instrumentation",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "main": "dist/index.js",
+  "files": ["dist"],
   "scripts": {
     "build": "rm -rf dist && tsc",
     "test": "prettier --check . && jest",
@@ -20,6 +20,9 @@
     "url": "https://github.com/alphagov/pay-js-metrics/issues"
   },
   "homepage": "https://github.com/alphagov/pay-js-metrics#readme",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org"
+  },
   "devDependencies": {
     "@tsconfig/node18-strictest": "^1.0.0",
     "@types/express": "^4.17.17",

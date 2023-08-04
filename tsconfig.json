@@ -1,11 +1,12 @@
 {
-  "extends": "@tsconfig/node18-strictest/tsconfig.json",
-  "exclude": ["node_modules"],
   "include": ["src"],
+  "exclude": ["node_modules", "src/test"],
   "compilerOptions": {
-    "ignoreDeprecations": "5.0",
+    "target": "ES5",
+    "module": "commonjs",
     "outDir": "dist",
-    "declaration": true,
-    "types": ["node", "jest", "express"]
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true
   }
 }

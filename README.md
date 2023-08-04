@@ -13,7 +13,7 @@ const express = require('express')
 const metrics = require('pay-js-metrics')
 
 const app = express()
-app.use(metrics.configure())
+app.use(metrics.initialise())
 ```
 `pay-js-metrics` will begin collecting the following baseline metrics automatically:
 
@@ -23,7 +23,7 @@ app.use(metrics.configure())
 
 These metrics will be published on `your.app/metrics`
 
-### Configuration
+### Initialisation
 
 #### ECS
 
@@ -41,7 +41,7 @@ endpoint and retrieve the metadata. The following fields are extracted and inclu
 __IMPORTANT__: If the `NODE_ENV` is set to `production` then these fields are mandatory, the `/metrics` endpoint will 
 not initialise without these labels being present.
 
-#### Optional configuration options
+#### Optional configuration
 
 `pay-js-metrics` takes an optional configuration object that has the following properties:
 
