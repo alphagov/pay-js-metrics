@@ -25,5 +25,5 @@ jobs:
             const openRelease = prs.data.find(pr => pr.user.login === 'alphagov-pay-ci-concourse' && pr.state === 'open')
 
             if (openRelease) {
-              core.setFailed('There is an unmerged release PR, please merge it before merging this PR.')
+              core.setFailed(`There is an unmerged release PR, please merge it before merging this PR. \n Link: ${openRelease.url}`)
             }
