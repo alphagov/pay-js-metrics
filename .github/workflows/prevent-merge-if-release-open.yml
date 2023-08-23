@@ -18,7 +18,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const THIS_PR_NUMBER = process.env.THIS_PR_NUMBER
+            const THIS_PR_NUMBER = Number(process.env.THIS_PR_NUMBER)
             const prs = await github.rest.pulls.list({
               owner: context.repo.owner,
               repo: context.repo.repo,
