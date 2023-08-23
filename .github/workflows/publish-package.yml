@@ -12,7 +12,7 @@ jobs:
   unit-tests:
     uses: ./.github/workflows/run-tests.yml
   publish:
-    needs: tests
+    needs: unit-tests
     runs-on: ubuntu-latest
     if: "contains(github.event.head_commit.message, '[automated release]')"
     steps:
