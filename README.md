@@ -113,6 +113,16 @@ For more examples of how metrics can be registered and used, see the [demo code]
 
 `npm run demo` starts the ecs metadata stub and the demo express app 
 
+## Releasing
+
+After a pull request is merged, Concourse will automatically create a new release pull request that increments the package version. 
+
+This pull request must be reviewed and merged by a developer. 
+
+Once the release pull request is merged, GitHub Actions will publish the new versioned package to NPM.
+
+__IMPORTANT__: Other pull requests will be blocked from merging until the release pull request is merged or closed.
+
 ## Licence
 
 [MIT License](LICENSE)
