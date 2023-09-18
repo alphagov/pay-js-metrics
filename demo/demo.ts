@@ -1,5 +1,4 @@
 import type { Request, Response } from 'express'
-import type { MetricsConfigurationOptions } from '../src'
 
 const { env } = require('node:process')
 const express = require('express')
@@ -8,15 +7,7 @@ const metrics = require('../src')
 const app = express()
 const PORT = 3001
 
-env.ECS_CONTAINER_METADATA_URI_V4 = 'http://localhost:3002' // use the bundled ecs metadata stub, both can be started by running `npm run demo`
-
-const config: MetricsConfigurationOptions = {
-  defaultMetricsLabels: {
-    hello: 'there',
-  },
-}
-
-app.use(metrics.initialise(config))
+app.use(metrics.initialise())
 
 const hello_counter = metrics.registerCounter('hello_counter', '/hello example counter metric', ['http_method'])
 const hello_param_counter = metrics.registerCounter('hello_param_counter', '/hello/:id example counter metric', [
