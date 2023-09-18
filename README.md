@@ -81,7 +81,8 @@ For more examples of how metrics can be registered and used, see the [demo code]
 
 `npm run format` runs the formatter rule set and will automatically update any src files that are failing 
 
-`npm run demo` starts the ecs metadata stub and the demo express app 
+`npm run demo` starts the demo express app where you can query `/metrics` to see the metrics, `/hello` and
+`/hello/<your name>` to generate more metrics and view the test page output.
 
 ## Releasing
 
