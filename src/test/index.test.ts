@@ -34,11 +34,11 @@ describe('/metrics endpoint', () => {
     jest.resetModules()
     app = express()
     metrics = require('../index')
+    app.use(metrics.initialise())
     env.NODE_ENV = 'development'
   })
 
   it('should return metrics as plain text by default', async () => {
-    app.use(metrics.initialise())
     const response = await request(app).get('/metrics')
     expect(response.status).toBe(200)
     expect(response.headers['content-type']).toContain('text/plain')
@@ -48,7 +48,6 @@ describe('/metrics endpoint', () => {
   })
 
   it('should return metrics as json when Accept header is set', async () => {
-    app.use(metrics.initialise())
     const response = await request(app).get('/metrics').set('Accept', 'application/json')
     let jsonArray = [{}]
     expect(response.status).toBe(200)
@@ -67,7 +66,6 @@ describe('/metrics endpoint', () => {
   })
 
   it('should return custom metrics with custom labels', async () => {
-    app.use(metrics.initialise())
     const test_counter = metrics.registerCounter('test_counter', 'test counter metric', ['test_type'])
     const test_gauge = metrics.registerGauge('test_gauge', 'test gauge metric', ['test_type'])
     const test_histogram = metrics.registerHistogram('test_histogram', 'test histogram metric', ['test_type'])
@@ -84,7 +82,6 @@ describe('/metrics endpoint', () => {
   })
 
   it('should return histogram with custom buckets', async () => {
-    app.use(metrics.initialise())
     const test_histogram_custom_buckets = metrics.registerHistogram(
       'test_histogram',
       'test histogram metric',
@@ -101,7 +98,6 @@ describe('/metrics endpoint', () => {
   })
 
   it('should return express http metrics', async () => {
-    app.use(metrics.initialise())
     app.get('/test', async (_, res) => {
       res.sendStatus(200)
     })
