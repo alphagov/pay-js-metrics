@@ -6,23 +6,6 @@ const path = require('path')
 const fs = require('fs')
 let { env } = require('node:process')
 
-jest.mock('node:http', () => ({
-  get: (_: any, callback: any) => {
-    const response = {
-      on: (event: string, handler: any) => {
-        if (event === 'data') {
-          const filePath = path.resolve(__dirname, '../../ecs_metadata/container.json')
-          const mockData = fs.readFileSync(filePath, 'utf8')
-          handler(Buffer.from(mockData))
-        } else if (event === 'end') {
-          handler()
-        }
-      },
-      end: () => {},
-    }
-    return callback(response)
-  },
-}))
 describe('/metrics endpoint', () => {
   const warnLogSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
   const errorLogSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
