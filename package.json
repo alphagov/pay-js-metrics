@@ -10,7 +10,7 @@
     "build": "rm -rf dist && tsc",
     "test": "prettier --check . && jest",
     "format": "prettier --write .",
-    "demo": "concurrently 'ts-node ecs_metadata/ecsMetadataStub.ts' 'ts-node ecs_metadata/demo.ts'"
+    "demo": "ts-node demo/demo.ts"
   },
   "repository": {
     "type": "git",

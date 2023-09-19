@@ -25,36 +25,6 @@ These metrics will be published on `your.app/metrics`
 
 ### Initialisation
 
-#### ECS
-
-This middleware supports ECS metadata as labels for all metrics, when the `ECS_CONTAINER_METADATA_URI_V4` 
-environment variable is available (automatically injected into ECS tasks) the middleware will contact the 
-endpoint and retrieve the metadata. The following fields are extracted and included automatically:
-
-- `containerImageTag`
-- `ecsClusterName`
-- `ecsServiceName`
-- `ecsTaskID`
-- `awsAccountName`
-- `instance`
-
-__IMPORTANT__: If the `NODE_ENV` is set to `production` then these fields are mandatory, the `/metrics` endpoint will 
-not initialise without these labels being present.
-
-#### Optional configuration
-
-`pay-js-metrics` takes an optional configuration object that has the following properties:
-
-```ts
-type MetricsConfigurationOptions = {
-  defaultMetricsLabels?: {
-    [key: string]: string
-  }
-}
-```
-
-`defaultMetricsLabels` is an object of KV strings that will be applied as labels to all metrics. These labels will be included with the ECS labels (if enabled).
-
 ### Registering custom metrics
 
 `pay-js-metrics` supports the following metric types:
@@ -111,7 +81,8 @@ For more examples of how metrics can be registered and used, see the [demo code]
 
 `npm run format` runs the formatter rule set and will automatically update any src files that are failing 
 
-`npm run demo` starts the ecs metadata stub and the demo express app 
+`npm run demo` starts the demo express app where you can query `/metrics` to see the metrics, `/hello` and
+`/hello/<your name>` to generate more metrics and view the test page output.
 
 ## Releasing
 

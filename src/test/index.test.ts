@@ -1,5 +1,4 @@
 import type { Express } from 'express'
-import type { MetricsConfigurationOptions } from '../index'
 
 const request = require('supertest')
 const express = require('express')
@@ -7,31 +6,6 @@ const path = require('path')
 const fs = require('fs')
 let { env } = require('node:process')
 
-const metricsConfig: MetricsConfigurationOptions = {
-  defaultMetricsLabels: {
-    one: 'test1',
-    two: 'test2',
-    three: 'test3',
-  },
-}
-
-jest.mock('node:http', () => ({
-  get: (_: any, callback: any) => {
-    const response = {
-      on: (event: string, handler: any) => {
-        if (event === 'data') {
-          const filePath = path.resolve(__dirname, '../../ecs_metadata/container.json')
-          const mockData = fs.readFileSync(filePath, 'utf8')
-          handler(Buffer.from(mockData))
-        } else if (event === 'end') {
-          handler()
-        }
-      },
-      end: () => {},
-    }
-    return callback(response)
-  },
-}))
 describe('/metrics endpoint', () => {
   const warnLogSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
   const errorLogSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
@@ -43,12 +17,11 @@ describe('/metrics endpoint', () => {
     jest.resetModules()
     app = express()
     metrics = require('../index')
+    app.use(metrics.initialise())
     env.NODE_ENV = 'development'
-    env.ECS_CONTAINER_METADATA_URI_V4 = undefined
   })
 
   it('should return metrics as plain text by default', async () => {
-    app.use(metrics.initialise(metricsConfig))
     const response = await request(app).get('/metrics')
     expect(response.status).toBe(200)
     expect(response.headers['content-type']).toContain('text/plain')
@@ -58,7 +31,6 @@ describe('/metrics endpoint', () => {
   })
 
   it('should return metrics as json when Accept header is set', async () => {
-    app.use(metrics.initialise(metricsConfig))
     const response = await request(app).get('/metrics').set('Accept', 'application/json')
     let jsonArray = [{}]
     expect(response.status).toBe(200)
@@ -76,8 +48,7 @@ describe('/metrics endpoint', () => {
     })
   })
 
-  it('should return custom metrics with default and custom labels', async () => {
-    app.use(metrics.initialise(metricsConfig))
+  it('should return custom metrics with custom labels', async () => {
     const test_counter = metrics.registerCounter('test_counter', 'test counter metric', ['test_type'])
     const test_gauge = metrics.registerGauge('test_gauge', 'test gauge metric', ['test_type'])
     const test_histogram = metrics.registerHistogram('test_histogram', 'test histogram metric', ['test_type'])
@@ -88,15 +59,12 @@ describe('/metrics endpoint', () => {
 
     const response = await request(app).get('/metrics')
     expect(response.status).toBe(200)
-    expect(response.text).toContain('test_counter{test_type="COUNTER",one="test1",two="test2",three="test3"} 1')
-    expect(response.text).toContain('test_gauge{test_type="GAUGE",one="test1",two="test2",three="test3"} 24')
-    expect(response.text).toContain(
-      'test_histogram_bucket{le="10",test_type="HISTOGRAM",one="test1",two="test2",three="test3"} 1'
-    )
+    expect(response.text).toContain('test_counter{test_type="COUNTER"} 1')
+    expect(response.text).toContain('test_gauge{test_type="GAUGE"} 24')
+    expect(response.text).toContain('test_histogram_bucket{le="10",test_type="HISTOGRAM"} 1')
   })
 
   it('should return histogram with custom buckets', async () => {
-    app.use(metrics.initialise(metricsConfig))
     const test_histogram_custom_buckets = metrics.registerHistogram(
       'test_histogram',
       'test histogram metric',
@@ -107,19 +75,12 @@ describe('/metrics endpoint', () => {
 
     const response = await request(app).get('/metrics')
     expect(response.status).toBe(200)
-    expect(response.text).toContain(
-      'test_histogram_bucket{le="20",test_type="CUSTOM_BUCKETS",one="test1",two="test2",three="test3"} 0'
-    )
-    expect(response.text).toContain(
-      'test_histogram_bucket{le="30",test_type="CUSTOM_BUCKETS",one="test1",two="test2",three="test3"} 1'
-    )
-    expect(response.text).toContain(
-      'test_histogram_bucket{le="40",test_type="CUSTOM_BUCKETS",one="test1",two="test2",three="test3"} 1'
-    )
+    expect(response.text).toContain('test_histogram_bucket{le="20",test_type="CUSTOM_BUCKETS"} 0')
+    expect(response.text).toContain('test_histogram_bucket{le="30",test_type="CUSTOM_BUCKETS"} 1')
+    expect(response.text).toContain('test_histogram_bucket{le="40",test_type="CUSTOM_BUCKETS"} 1')
   })
 
   it('should return express http metrics', async () => {
-    app.use(metrics.initialise(metricsConfig))
     app.get('/test', async (_, res) => {
       res.sendStatus(200)
     })
@@ -130,45 +91,8 @@ describe('/metrics endpoint', () => {
     await request(app).get('/test/ishouldnotbeinthemetrics')
     const response = await request(app).get('/metrics')
     expect(response.status).toBe(200)
-    expect(response.text).toContain(
-      'express_http_count{status_code="200",http_method="GET",path="/test",one="test1",two="test2",three="test3"} 1'
-    )
-    expect(response.text).toContain(
-      'express_http_count{status_code="200",http_method="GET",path="/test/:withparam",one="test1",two="test2",three="test3"} 1'
-    )
+    expect(response.text).toContain('express_http_count{status_code="200",http_method="GET",path="/test"} 1')
+    expect(response.text).toContain('express_http_count{status_code="200",http_method="GET",path="/test/:withparam"} 1')
     expect(response.text).not.toContain('ishouldnotbeinthemetrics')
-  })
-
-  it('should return metrics with ecs labels when configured', async () => {
-    env.ECS_CONTAINER_METADATA_URI_V4 = 'http://1.2.3.4:8080/path/'
-    app.use(metrics.initialise(metricsConfig))
-
-    const response = await request(app).get('/metrics')
-    expect(response.status).toBe(200)
-    expect(response.text).toContain(
-      'nodejs_eventloop_lag_mean_seconds{one="test1",two="test2",three="test3",containerImageTag="latest",ecsClusterName="test-12-fargate",ecsServiceName="curl",ecsTaskID="cd189a933e5849daa93386466019ab50",awsAccountName="test",instance="192.0.2.3"}'
-    )
-    expect(response.text).toContain(
-      'process_cpu_seconds_total{one="test1",two="test2",three="test3",containerImageTag="latest",ecsClusterName="test-12-fargate",ecsServiceName="curl",ecsTaskID="cd189a933e5849daa93386466019ab50",awsAccountName="test",instance="192.0.2.3"}'
-    )
-  })
-
-  it('should not return metrics when ecs labels are missing and environment type is production', async () => {
-    env.NODE_ENV = 'production'
-    app.use(metrics.initialise(metricsConfig))
-
-    const response = await request(app).get('/metrics')
-    expect(response.status).toBe(501)
-    expect(errorLogSpy).toHaveBeenCalledWith('ECS_CONTAINER_METADATA_URI_V4 not found in environment')
-    expect(response.text).toBe(JSON.stringify({ error: 'metrics initialization error' }))
-  })
-
-  it('should return metrics when environment type is not production and metadata uri is not available', async () => {
-    app.use(metrics.initialise(metricsConfig))
-
-    const response = await request(app).get('/metrics')
-    expect(response.status).toBe(200)
-    expect(response.text).toContain('nodejs_eventloop_lag_stddev_seconds')
-    expect(warnLogSpy).toHaveBeenCalledWith('ECS_CONTAINER_METADATA_URI_V4 not found in environment')
   })
 })
