@@ -1,6 +1,6 @@
 {
   "name": "@govuk-pay/pay-js-metrics",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "GOV.UK Pay Express middleware for Prometheus metrics instrumentation",
   "main": "dist/index.js",
   "files": [
