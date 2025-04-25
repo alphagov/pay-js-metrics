@@ -10,7 +10,7 @@ const http = require('node:http')
 const EXPRESS_METRIC_STATUS_CODE = 'status_code'
 const EXPRESS_METRIC_HTTP_METHOD = 'http_method'
 const EXPRESS_METRIC_PATH = 'path'
-const METRICS_PATH = /^\/metrics?$/
+const METRICS_PATH = /^\/metrics$/
 
 let expressHttpHistogram: Histogram
 let ecsLabelsRequired: boolean = false
